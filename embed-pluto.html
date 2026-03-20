@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Pluto Embed Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+    #video {
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      object-fit: contain;
+    }
+    #overlay {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 8px 12px;
+      background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    #status {
+      pointer-events: auto;
+    }
+    #hint {
+      pointer-events: auto;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      color: #000;
+      font-size: 10px;
+      font-weight: 700;
+      margin-right: 6px;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" playsinline webkit-playsinline preload="metadata" muted></video>
+
+  <div id="overlay">
+    <div id="status"><span class="badge">LIVE</span>Caricamento stream...</div>
+    <div id="hint">Premi OK / tocca per attivare l'audio</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    // 1) Prendiamo la sorgente dalla query string (?src=...)
+    const src    = getQueryParam('src');
+    const video  = document.getElementById('video');
+    const status = document.getElementById('status');
+
+    function setStatus(text, color) {
+      status.innerHTML = '<span class="badge">LIVE</span>' + text;
+      if (color) status.style.color = color;
+    }
+
+    if (!src) {
+      setStatus('Nessun URL sorgente (src) specificato', '#f97373');
+    } else {
+      setStatus('Connessione allo stream...', '#e5e7eb');
+
+      let audioUnlocked = false;
+      function unlockAudio() {
+        if (audioUnlocked) return;
+        audioUnlocked = true;
+        video.muted  = false;
+        video.volume = 1.0;
+        setStatus('Stream attivo', '#a5b4fc');
+      }
+
+      // 2) Autoplay in mute
+      function startPlayback() {
+        video.muted  = true;
+        video.volume = 0.0;
+
+        video.play()
+          .then(() => {
+            setStatus('Stream attivo (audio in muto)', '#a5b4fc');
+          })
+          .catch((err) => {
+            console.error('Autoplay error', err);
+            setStatus('Premi OK / tocca per avviare lo stream', '#fbbf24');
+          });
+      }
+
+      if (window.Hls && Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          backBufferLength: 60
+        });
+        hls.loadSource(src);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          startPlayback();
+        });
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('Hls error', event, data);
+          setStatus('Errore stream: ' + data.type, '#f97373');
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = src;
+        startPlayback();
+      } else {
+        setStatus('HLS non supportato in questo browser', '#f97373');
+      }
+
+      // 3) Primo click / OK → attiva l'audio
+      video.addEventListener('click', unlockAudio);
+      document.addEventListener('keydown', (e) => {
+        const code = e.keyCode || e.which;
+        const key  = e.key || '';
+        if (key === 'Enter' || code === 13) {
+          unlockAudio();
+        }
+      });
+    }
+  </script>
+</body>
+</html>
