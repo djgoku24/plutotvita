@@ -493,18 +493,14 @@ async function loadPlutoFromApi() {
     cat = ch.subgenre;
   }
 
-  // URL del player Pluto che vuoi aprire direttamente in iframe
-  // Esempio: pagina player di jmp2.uk per quel canale
-  const iframeUrl = `https://jmp2.uk/plu-${ch._id}`;
-
-  return {
-    name: ch.name,
-    category: cat,
-    type: 'iframe',
-    urlIframe: iframeUrl,
-    plutoId: ch._id
-  };
-});
+ return {
+            name: ch.name,
+            category: cat,
+            type: 'pluto',
+            url: `https://jmp2.uk/plu-${ch._id}.m3u8`,
+            plutoId: ch._id
+          };
+        });
 
     console.log('channels finali =', channels.length);
 
