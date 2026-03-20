@@ -481,9 +481,7 @@ async function loadPlutoFromApi() {
     console.log('Pluto channels raw len =', plutoChannels.length);
     console.log('Esempio primi 10 canali:', plutoChannels.slice(0, 10));
 
-    const EMBED_BASE = 'https://djgoku24.github.io/plutotvita/embed-pluto.html';
-
-channels = plutoAll.map(ch => {
+   channels = plutoAll.map(ch => {
   let cat = 'PLUTO';
   if (Array.isArray(ch.categories) && ch.categories.length) {
     cat = ch.categories[0];
@@ -495,17 +493,19 @@ channels = plutoAll.map(ch => {
     cat = ch.subgenre;
   }
 
-  // NIENTE EMBED, HLS diretto
-  const hlsUrl = `https://morning-morning-68d9.antoninoaiello11.workers.dev/?url=https://jmp2.uk/plu-${ch._id}.m3u8`;
+  // URL del player Pluto che vuoi aprire direttamente in iframe
+  // Esempio: pagina player di jmp2.uk per quel canale
+  const iframeUrl = `https://jmp2.uk/plu-${ch._id}`;
 
   return {
     name: ch.name,
     category: cat,
-    type: 'hls',
-    url: hlsUrl,
+    type: 'iframe',
+    urlIframe: iframeUrl,
     plutoId: ch._id
   };
 });
+
     console.log('channels finali =', channels.length);
 
     channels.sort((a, b) => {
@@ -808,12 +808,22 @@ channels = plutoAll.map(ch => {
     }
 
     // FULLSCREEN
-    if (isEnter) {
-      e.preventDefault();
-      el.body.classList.remove('ui-hidden');
-      resetUITimer();
-      return;
-    }
+if (isEnter) {
+  // NON faccio preventDefault → lascio passare l'evento all'iframe
+  // così puoi usare OK per interagire con il player interno (play/pause)
+  el.body.classList.remove('ui-hidden');
+  resetUITimer();
+  return;
+}
+
+// tasto destra: mostra barra info / overlay
+if (isRight) {
+  e.preventDefault();
+  el.body.classList.remove('ui-hidden');
+  resetUITimer();
+  return;
+}
+
 
     // comandi playback solo per HLS
     if (isSpace && appState.playingType === 'hls') {
