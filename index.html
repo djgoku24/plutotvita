@@ -582,15 +582,23 @@ async function loadPlutoFromApi() {
     if(focusedEl) focusedEl.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
 
- function handleChannelClick(index){
+function handleChannelClick(index){
   const ch = channels[index];
   if (!ch) return;
 
+  // Pluto in iframe
+  if (ch.type === 'iframe' && ch.urlIframe){
+    playIframeChannel(index);
+    return;
+  }
+
+  // Eventuali altri canali HLS diretti
   if (ch.type === 'hls' && ch.url){
     playHlsChannel(index);
     return;
   }
 }
+
 
 
   function destroyHls(){
