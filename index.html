@@ -762,141 +762,143 @@ function handleChannelClick(index){
 
   window.addEventListener('popstate',()=>{if(appState.isFullscreen) exitFullscreen();});
 
-  document.addEventListener('keydown', (e) => {
-    e.stopPropagation();
-    const code = e.keyCode || e.which;
-    const key  = e.key || '';
+ document.addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  const code = e.keyCode || e.which;
+  const key  = e.key || '';
 
-    const isUp    = key === 'ArrowUp'    || code === 38;
-    const isDown  = key === 'ArrowDown'  || code === 40;
-    const isLeft  = key === 'ArrowLeft'  || code === 37;
-    const isRight = key === 'ArrowRight' || code === 39;
-    const isEnter = key === 'Enter'      || code === 13;
-    const isSpace = key === ' '          || code === 32;
-    const isBack  = key === 'Backspace'  || key === 'Escape' || [8,27,461,10009].includes(code);
+  const isUp    = key === 'ArrowUp'    || code === 38;
+  const isDown  = key === 'ArrowDown'  || code === 40;
+  const isLeft  = key === 'ArrowLeft'  || code === 37;
+  const isRight = key === 'ArrowRight' || code === 39;
+  const isEnter = key === 'Enter'      || code === 13;
+  const isSpace = key === ' '          || code === 32;
+  const isBack  = key === 'Backspace'  || key === 'Escape' || [8,27,461,10009].includes(code);
 
-    resetUITimer();
-
-    if (isBack) {
-      e.preventDefault();
-      if (appState.isFullscreen) {
-        exitFullscreen();
-      }
-      return;
-    }
-
-    // NON FULLSCREEN: navigo la lista
-    if (!appState.isFullscreen) {
-      if (isUp) {
-        e.preventDefault();
-        if (appState.focusedIndex > 0) {
-          appState.focusedIndex--;
-          updateFocus();
-        }
-        return;
-      }
-      if (isDown) {
-        e.preventDefault();
-        if (appState.focusedIndex < channels.length - 1) {
-          appState.focusedIndex++;
-          updateFocus();
-        }
-        return;
-      }
-      if (isEnter) {
-        e.preventDefault();
-        handleChannelClick(appState.focusedIndex);
-        return;
-      }
-      return;
-    }
-
-    // FULLSCREEN
-if (isEnter) {
-  // NON faccio preventDefault → lascio passare l'evento all'iframe
-  // così puoi usare OK per interagire con il player interno (play/pause)
-  el.body.classList.remove('ui-hidden');
   resetUITimer();
-  return;
-}
 
-// tasto destra: mostra barra info / overlay
-if (isRight) {
-  e.preventDefault();
-  el.body.classList.remove('ui-hidden');
-  resetUITimer();
-  return;
-}
-
-
-    // comandi playback solo per HLS
-    if (isSpace && appState.playingType === 'hls') {
-      e.preventDefault();
-      if (el.video.paused) {
-        el.video.play();
-        showStatus('▶ Play','success');
-      } else {
-        el.video.pause();
-        showStatus('⏸ Pausa','info');
-      }
-      return;
-    }
-
-    // sinistra: torna alla lista
-    if (isLeft) {
-      e.preventDefault();
+  // BACK
+  if (isBack) {
+    e.preventDefault();
+    if (appState.isFullscreen) {
       exitFullscreen();
-      appState.focusedIndex = appState.playingIndex;
-      updateFocus();
-      el.body.classList.remove('ui-hidden');
-      return;
     }
+    return;
+  }
 
-    // su/giù in fullscreen: zapping
+  // NON FULLSCREEN: navigo la lista
+  if (!appState.isFullscreen) {
     if (isUp) {
       e.preventDefault();
-      let i = appState.playingIndex + 1;
-      while (
-        i < channels.length &&
-        !(
-          (channels[i].type === 'hls' && channels[i].url) ||
-          (channels[i].type === 'iframe' && channels[i].urlIframe)
-        )
-      ) {
-        i++;
-      }
-      if (i < channels.length) {
-        if (channels[i].type === 'iframe') {
-          playIframeChannel(i);
-        } else {
-          playHlsChannel(i);
-        }
+      if (appState.focusedIndex > 0) {
+        appState.focusedIndex--;
+        updateFocus();
       }
       return;
     }
-
     if (isDown) {
       e.preventDefault();
-      let i = appState.playingIndex - 1;
-      while (
-        i >= 0 &&
-        !(
-          (channels[i].type === 'hls' && channels[i].url) ||
-          (channels[i].type === 'iframe' && channels[i].urlIframe)
-        )
-      ) {
-        i--;
-      }
-      if (i >= 0) {
-        if (channels[i].type === 'iframe') {
-          playIframeChannel(i);
-        } else {
-          playHlsChannel(i);
-        }
+      if (appState.focusedIndex < channels.length - 1) {
+        appState.focusedIndex++;
+        updateFocus();
       }
       return;
     }
-  });
+    if (isEnter) {
+      e.preventDefault();
+      handleChannelClick(appState.focusedIndex);
+      return;
+    }
+    return;
+  }
+
+  // === FULLSCREEN ===
+
+  // OK: NON blocco l'evento → passa all'iframe / player interno
+  if (isEnter) {
+    // niente preventDefault qui
+    el.body.classList.remove('ui-hidden');
+    resetUITimer();
+    return;
+  }
+
+  // FRECCIA DESTRA: mostra barra info / overlay del player
+  if (isRight) {
+    e.preventDefault();
+    el.body.classList.remove('ui-hidden');
+    resetUITimer();
+    return;
+  }
+
+  // comandi playback solo per HLS
+  if (isSpace && appState.playingType === 'hls') {
+    e.preventDefault();
+    if (el.video.paused) {
+      el.video.play();
+      showStatus('▶ Play','success');
+    } else {
+      el.video.pause();
+      showStatus('⏸ Pausa','info');
+    }
+    return;
+  }
+
+  // SINISTRA: torna alla lista
+  if (isLeft) {
+    e.preventDefault();
+    exitFullscreen();
+    appState.focusedIndex = appState.playingIndex;
+    updateFocus();
+    el.body.classList.remove('ui-hidden');
+    return;
+  }
+
+  // SU/GIÙ in fullscreen: zapping
+  if (isUp) {
+    e.preventDefault();
+    let i = appState.playingIndex + 1;
+    while (
+      i < channels.length &&
+      !(
+        (channels[i].type === 'hls' && channels[i].url) ||
+        (channels[i].type === 'iframe' && channels[i].urlIframe)
+      )
+    ) {
+      i++;
+    }
+    if (i < channels.length) {
+      if (channels[i].type === 'iframe') {
+        playIframeChannel(i);
+      } else {
+        playHlsChannel(i);
+      }
+    }
+    return;
+  }
+
+  if (isDown) {
+    e.preventDefault();
+    let i = appState.playingIndex - 1;
+    while (
+      i >= 0 &&
+      !(
+        (channels[i].type === 'hls' && channels[i].url) ||
+        (channels[i].type === 'iframe' && channels[i].urlIframe)
+      )
+    ) {
+      i--;
+    }
+    if (i >= 0) {
+      if (channels[i].type === 'iframe') {
+        playIframeChannel(i);
+      } else {
+        playHlsChannel(i);
+      }
+    }
+    return;
+  }
+});
+
 
   async function init(){
   showStatus('Caricamento canali Pluto...','loading');
